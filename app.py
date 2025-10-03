@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 # --- LOAD THE FINAL, CORRECTED FILES ---
-# This loads the robust model you just trained.
 try:
     model = joblib.load('lgbm_exoplanet_model_final.pkl')
     scaler = joblib.load('scaler_final.pkl')
@@ -23,17 +22,14 @@ Enter the object's properties in the sidebar to get a prediction.
 # --- DEFINE THE INPUT FEATURES IN THE SIDEBAR ---
 st.sidebar.header("Input Features")
 
-# This feature order must exactly match the one used for training.
 feature_order = [
     'koi_period', 'koi_time0bk', 'koi_impact', 'koi_duration',
     'koi_depth', 'koi_prad', 'koi_teq', 'koi_insol',
     'koi_sma', 'koi_ror', 'koi_steff', 'koi_slogg', 'koi_srad'
 ]
 
-# Create a dictionary to hold user inputs
 user_inputs = {}
 
-# Create input fields for each feature, with helpful default values
 user_inputs['koi_period'] = st.sidebar.number_input('Orbital Period (days)', value=9.25, format="%.4f")
 user_inputs['koi_depth'] = st.sidebar.number_input('Transit Depth (ppm)', value=350.0, format="%.1f")
 user_inputs['koi_duration'] = st.sidebar.number_input('Transit Duration (hours)', value=2.9, format="%.2f")
@@ -42,7 +38,6 @@ user_inputs['koi_insol'] = st.sidebar.number_input('Insolation Flux (Earth flux)
 user_inputs['koi_teq'] = st.sidebar.number_input('Equilibrium Temperature (K)', value=765.0)
 user_inputs['koi_impact'] = st.sidebar.number_input('Impact Parameter', value=0.58, format="%.2f")
 
-# Fill in the rest of the features with placeholder default values for simplicity
 user_inputs['koi_time0bk'] = 132.6
 user_inputs['koi_sma'] = 0.08
 user_inputs['koi_ror'] = 0.02
@@ -52,28 +47,20 @@ user_inputs['koi_srad'] = 0.95
 
 # --- PREDICTION LOGIC ---
 if st.sidebar.button("Predict Disposition"):
-    # 1. Convert user inputs into a DataFrame in the correct order
     input_df = pd.DataFrame([user_inputs], columns=feature_order)
     st.write("### User Input Features:")
     st.dataframe(input_df)
 
-    # 2. Scale the user input using the loaded scaler
     scaled_input = scaler.transform(input_df)
-
-    # 3. Make prediction and get probabilities
     prediction = model.predict(scaled_input)
     prediction_proba = model.predict_proba(scaled_input)
 
-    # 4. Display the result in a user-friendly format
     st.write("---")
     st.write("### 🤖 Prediction Result")
 
-    disposition_map = {0: 'FALSE POSITIVE', 1: 'CANDIDATE', 2: 'CONFIRMED'}
-    # The model was trained on string labels, so we can use classes_ directly
-    result = final_model.classes_[prediction[0]]
+    # ✅ FIX: Changed 'final_model' to 'model' to match the variable name used when loading.
+    result = model.classes_[prediction[0]]
 
-
-    # Display with color-coded alerts
     if result == 'CONFIRMED':
         st.success(f"The model predicts: **{result}**")
     elif result == 'CANDIDATE':
