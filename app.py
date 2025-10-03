@@ -58,9 +58,11 @@ if st.sidebar.button("Predict Disposition"):
     st.write("---")
     st.write("### 🤖 Prediction Result")
 
-    # ✅ FIX: Changed 'final_model' to 'model' to match the variable name used when loading.
-    result = model.classes_[prediction[0]]
+    # ✅ FINAL FIX: The model's prediction is already the final string (e.g., 'CONFIRMED').
+    # We just need to get the first item from the prediction array.
+    result = prediction[0]
 
+    # Display result with color-coded alerts
     if result == 'CONFIRMED':
         st.success(f"The model predicts: **{result}**")
     elif result == 'CANDIDATE':
