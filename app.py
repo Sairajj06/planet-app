@@ -22,11 +22,11 @@ Enter the object's properties in the sidebar to get a prediction.
 # --- DEFINE THE INPUT FEATURES IN THE SIDEBAR ---
 st.sidebar.header("Input Features")
 
-# Define the order of features as the model expects them
+# ✅ FIX: Corrected 'koi_sradius' to 'koi_srad' to match the scaler
 feature_order = [
     'koi_period', 'koi_time0bk', 'koi_impact', 'koi_duration',
     'koi_depth', 'koi_prad', 'koi_teq', 'koi_insol',
-    'koi_sma', 'koi_ror', 'koi_steff', 'koi_slogg', 'koi_sradius'
+    'koi_sma', 'koi_ror', 'koi_steff', 'koi_slogg', 'koi_srad' 
 ]
 
 # Create a dictionary to hold user inputs
@@ -47,7 +47,8 @@ user_inputs['koi_sma'] = 0.08
 user_inputs['koi_ror'] = 0.02
 user_inputs['koi_steff'] = 5800.0
 user_inputs['koi_slogg'] = 4.5
-user_inputs['koi_sradius'] = 0.95
+# ✅ FIX: Corrected 'koi_sradius' to 'koi_srad'
+user_inputs['koi_srad'] = 0.95 
 
 # --- PREDICTION LOGIC ---
 if st.sidebar.button("Predict Disposition"):
@@ -55,16 +56,6 @@ if st.sidebar.button("Predict Disposition"):
     input_df = pd.DataFrame([user_inputs], columns=feature_order)
     st.write("### User Input Features:")
     st.dataframe(input_df)
-
-    # ✅ --- NEW DEBUGGING CODE ---
-    st.write("---")
-    st.write("### 🕵️ Debugging Info")
-    st.write("**Features the Scaler expects:**")
-    st.write(scaler.feature_names_in_.tolist())
-    st.write("**Features the App is providing:**")
-    st.write(input_df.columns.tolist())
-    st.write("---")
-    # ✅ --- END OF DEBUGGING CODE ---
 
     # 2. Scale the user input
     scaled_input = scaler.transform(input_df)
@@ -74,7 +65,9 @@ if st.sidebar.button("Predict Disposition"):
     prediction_proba = model.predict_proba(scaled_input)
 
     # 4. Display the result
+    st.write("---")
     st.write("### 🤖 Prediction Result")
+
     disposition_map = {0: 'FALSE POSITIVE', 1: 'CANDIDATE', 2: 'CONFIRMED'}
     result = disposition_map[prediction[0]]
 
