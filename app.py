@@ -75,3 +75,4 @@ if st.sidebar.button("Predict Disposition"):
         index=['Confidence']
     )
     st.dataframe(proba_df.style.format("{:.2%}"))
+
