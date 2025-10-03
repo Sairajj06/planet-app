@@ -35,7 +35,6 @@ user_inputs = {}
 # Create input fields for each feature
 user_inputs['koi_period'] = st.sidebar.number_input('Orbital Period (days)', value=9.25, format="%.4f")
 user_inputs['koi_depth'] = st.sidebar.number_input('Transit Depth (ppm)', value=350.0, format="%.1f")
-# ✅ FIX: Corrected typo from user_layouts to user_inputs
 user_inputs['koi_duration'] = st.sidebar.number_input('Transit Duration (hours)', value=2.9, format="%.2f")
 user_inputs['koi_prad'] = st.sidebar.number_input('Planetary Radius (Earth radii)', value=2.26, format="%.2f")
 user_inputs['koi_insol'] = st.sidebar.number_input('Insolation Flux (Earth flux)', value=93.5, format="%.1f")
@@ -57,6 +56,16 @@ if st.sidebar.button("Predict Disposition"):
     st.write("### User Input Features:")
     st.dataframe(input_df)
 
+    # ✅ --- NEW DEBUGGING CODE ---
+    st.write("---")
+    st.write("### 🕵️ Debugging Info")
+    st.write("**Features the Scaler expects:**")
+    st.write(scaler.feature_names_in_.tolist())
+    st.write("**Features the App is providing:**")
+    st.write(input_df.columns.tolist())
+    st.write("---")
+    # ✅ --- END OF DEBUGGING CODE ---
+
     # 2. Scale the user input
     scaled_input = scaler.transform(input_df)
 
@@ -65,9 +74,7 @@ if st.sidebar.button("Predict Disposition"):
     prediction_proba = model.predict_proba(scaled_input)
 
     # 4. Display the result
-    st.write("---")
     st.write("### 🤖 Prediction Result")
-
     disposition_map = {0: 'FALSE POSITIVE', 1: 'CANDIDATE', 2: 'CONFIRMED'}
     result = disposition_map[prediction[0]]
 
