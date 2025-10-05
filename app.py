@@ -36,7 +36,6 @@ except Exception as e:
     st.error(f"Error loading model or scaler: {e}")
     st.stop()
 
-
 # --- APP TITLE AND DESCRIPTION ---
 st.set_page_config(page_title="Exoplanet Classifier", layout="wide")
 st.title("🚀 Exoplanet Classification App")
@@ -44,37 +43,46 @@ st.write("This app predicts the disposition of a Kepler Object of Interest (KOI)
 
 # --- DEFINE THE INPUT FEATURES IN THE SIDEBAR ---
 st.sidebar.header("Adjustable Input Features")
-user_inputs = {}
 
-user_inputs['koi_period'] = st.sidebar.number_input('Orbital Period (days)', value=9.25, format="%.4f")
-user_inputs['koi_depth'] = st.sidebar.number_input('Transit Depth (ppm)', value=350.0, format="%.1f")
-user_inputs['koi_duration'] = st.sidebar.number_input('Transit Duration (hours)', value=2.9, format="%.2f")
-user_inputs['koi_prad'] = st.sidebar.number_input('Planetary Radius (Earth radii)', value=2.26, format="%.2f")
-user_inputs['koi_insol'] = st.sidebar.number_input('Insolation Flux (Earth flux)', value=93.5, format="%.1f")
-user_inputs['koi_teq'] = st.sidebar.number_input('Equilibrium Temperature (K)', value=765.0)
-user_inputs['koi_impact'] = st.sidebar.number_input('Impact Parameter', value=0.58, format="%.2f")
-user_inputs['koi_model_snr'] = st.sidebar.number_input('Transit Signal-to-Noise', value=25.8, format="%.1f")
-
+# This dictionary defines the UI inputs and their default order/values.
+# This order is important.
+ui_features = {
+    'koi_period': st.sidebar.number_input('Orbital Period (days)', value=9.25, format="%.4f"),
+    'koi_depth': st.sidebar.number_input('Transit Depth (ppm)', value=350.0, format="%.1f"),
+    'koi_duration': st.sidebar.number_input('Transit Duration (hours)', value=2.9, format="%.2f"),
+    'koi_prad': st.sidebar.number_input('Planetary Radius (Earth radii)', value=2.26, format="%.2f"),
+    'koi_insol': st.sidebar.number_input('Insolation Flux (Earth flux)', value=93.5, format="%.1f"),
+    'koi_teq': st.sidebar.number_input('Equilibrium Temperature (K)', value=765.0),
+    'koi_impact': st.sidebar.number_input('Impact Parameter', value=0.58, format="%.2f"),
+    'koi_model_snr': st.sidebar.number_input('Transit Signal-to-Noise', value=25.8, format="%.1f")
+}
 
 # --- PREDICTION LOGIC ---
 if st.sidebar.button("Predict Disposition"):
     try:
-        # ✅ FINAL ROBUST FIX: Get feature names directly from the loaded scaler
-        expected_features = scaler.feature_names_in_
-
-        # Create a DataFrame with all required columns, initialized to a default value (e.g., 0).
-        input_data = pd.DataFrame(0, index=[0], columns=expected_features)
-
-        # Update the DataFrame with the user's input values.
-        for key, value in user_inputs.items():
-            if key in input_data.columns:
-                input_data[key] = value
+        # ✅ FINAL FIX: Use the scaler's expected number of features to build the input.
+        # `n_features_in_` is compatible with older scikit-learn versions.
+        n_expected_features = scaler.n_features_in_
         
-        st.write("### Input Features (showing only user-adjustable values):")
-        st.dataframe(pd.DataFrame([user_inputs]))
+        # Get the values from the UI in the correct order.
+        user_values = [ui_features[key] for key in ui_features]
+        
+        # Create an array of zeros with the correct shape.
+        input_array = np.zeros(n_expected_features)
+        
+        # Fill the beginning of the array with the user's values.
+        # This assumes the UI features correspond to the first features of the training data.
+        input_array[:len(user_values)] = user_values
+        
+        # Reshape for the scaler, which expects a 2D array.
+        input_array_reshaped = input_array.reshape(1, -1)
+        
+        # Display a simplified version of the input to the user.
+        st.write("### User Input Features:")
+        st.dataframe(pd.DataFrame([ui_features]))
 
-        # Scale the input (it now has the guaranteed correct shape and column order)
-        scaled_input = scaler.transform(input_data)
+        # Scale the input and make the prediction.
+        scaled_input = scaler.transform(input_array_reshaped)
         prediction = model.predict(scaled_input)
         prediction_proba = model.predict_proba(scaled_input)
 
