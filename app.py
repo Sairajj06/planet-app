@@ -43,9 +43,6 @@ st.write("This app predicts the disposition of a Kepler Object of Interest (KOI)
 
 # --- DEFINE THE INPUT FEATURES IN THE SIDEBAR ---
 st.sidebar.header("Adjustable Input Features")
-
-# This dictionary defines the UI inputs and their default order/values.
-# This order is important.
 ui_features = {
     'koi_period': st.sidebar.number_input('Orbital Period (days)', value=9.25, format="%.4f"),
     'koi_depth': st.sidebar.number_input('Transit Depth (ppm)', value=350.0, format="%.1f"),
@@ -60,45 +57,50 @@ ui_features = {
 # --- PREDICTION LOGIC ---
 if st.sidebar.button("Predict Disposition"):
     try:
-        # ✅ FINAL FIX: Use the scaler's expected number of features to build the input.
-        # `n_features_in_` is compatible with older scikit-learn versions.
+        # ✅ FIX #1: Define the mapping from numbers back to class names.
+        # This order is based on how LabelEncoder sorts the names alphabetically.
+        class_names = ['CANDIDATE', 'CONFIRMED', 'FALSE POSITIVE']
+
+        # Get the number of features the scaler expects.
         n_expected_features = scaler.n_features_in_
         
-        # Get the values from the UI in the correct order.
-        user_values = [ui_features[key] for key in ui_features]
+        # Get user values from the UI.
+        user_values = list(ui_features.values())
         
         # Create an array of zeros with the correct shape.
         input_array = np.zeros(n_expected_features)
         
-        # Fill the beginning of the array with the user's values.
-        # This assumes the UI features correspond to the first features of the training data.
+        # Fill the start of the array with user values.
         input_array[:len(user_values)] = user_values
         
-        # Reshape for the scaler, which expects a 2D array.
+        # Reshape for the scaler.
         input_array_reshaped = input_array.reshape(1, -1)
         
-        # Display a simplified version of the input to the user.
+        # Display simplified user input.
         st.write("### User Input Features:")
         st.dataframe(pd.DataFrame([ui_features]))
 
         # Scale the input and make the prediction.
         scaled_input = scaler.transform(input_array_reshaped)
-        prediction = model.predict(scaled_input)
+        prediction_numeric = model.predict(scaled_input) # This will be [0], [1], or [2]
         prediction_proba = model.predict_proba(scaled_input)
 
         st.write("---")
         st.write("### 🤖 Prediction Result")
-        result = prediction[0]
 
-        if result == 'CONFIRMED':
-            st.success(f"The model predicts: **{result}**")
-        elif result == 'CANDIDATE':
-            st.info(f"The model predicts: **{result}**")
+        # ✅ FIX #2: Use the numeric prediction to look up the text label.
+        result_name = class_names[prediction_numeric[0]]
+
+        # Display the final text result with color-coding.
+        if result_name == 'CONFIRMED':
+            st.success(f"The model predicts: **{result_name}**")
+        elif result_name == 'CANDIDATE':
+            st.info(f"The model predicts: **{result_name}**")
         else:
-            st.error(f"The model predicts: **{result}**")
+            st.error(f"The model predicts: **{result_name}**")
 
         st.write("### Prediction Confidence")
-        proba_df = pd.DataFrame(prediction_proba, columns=model.classes_, index=['Confidence'])
+        proba_df = pd.DataFrame(prediction_proba, columns=class_names, index=['Confidence'])
         st.dataframe(proba_df.style.format("{:.2%}"))
 
     except Exception as e:
